@@ -452,9 +452,35 @@ function layout() {
     w.h = h; w.w = h * w.ratio;
     w.el.style.width = w.w + 'px';
     w.el.style.height = (h + FOOT) + 'px';
-    if (!w.placed) { w.x = (W / walkers.length) * (i + rand(.1, .9)) - w.w / 2; w.placed = true; }
+    if (!w.placed) {
+      const s = savedPos[w.name];
+      if (s && s.surf >= 0 && s.surf <= BG.platforms.length) {   // 지난번 위치 복원
+        w.surf = s.surf; w.dir = s.dir === -1 ? -1 : 1;
+        const [lo, hi] = surfaceRange(w, w.surf);
+        w.x = Math.max(lo, Math.min(hi, s.x * W - w.w / 2));
+      } else {
+        w.x = (W / walkers.length) * (i + rand(.1, .9)) - w.w / 2;
+      }
+      w.placed = true;
+    }
   });
 }
+
+/* 위치 저장 — 노션이 임베드를 다시 불러와도 마지막 배치 그대로 */
+const SAVE_KEY = 'team5-walkers-pos-v1';
+let savedPos = {};
+try { savedPos = JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { savedPos = {}; }
+function savePositions() {
+  if (W <= 0) return;
+  walkers.forEach(w => {
+    if (w.placed && w.state === 'walk') savedPos[w.name] = { x: (w.x + w.w / 2) / W, surf: w.surf, dir: w.dir };
+  });
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(savedPos)); } catch (e) {}
+}
+setInterval(savePositions, 2000);
+addEventListener('pagehide', savePositions);
+document.addEventListener('visibilitychange', () => { if (document.hidden) savePositions(); });
+
 layout();
 new ResizeObserver(layout).observe(stage);
 
