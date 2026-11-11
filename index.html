@@ -190,6 +190,56 @@
   .walker.bday .bubble { margin-bottom: 32px; }
   @keyframes bdayBob { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -3px); } }
   @keyframes twinkle { 0% { opacity: 1; } 100% { opacity: .2; } }
+  /* 입사 N주년 — 1~10주년, 올라갈수록 화려하게 */
+  .anv-tag {
+    position: absolute; bottom: 100%; left: 50%; margin-bottom: 4px;
+    display: none; white-space: nowrap; pointer-events: none; overflow: hidden;
+    font-size: var(--fs, 10.5px); font-weight: 800; letter-spacing: .02em; color: var(--fg, #fff);
+    background: var(--bg); border: 2px solid var(--bd); border-radius: 4px; padding: 2px 7px;
+    text-shadow: 0 1px 0 var(--ts);
+    box-shadow: 0 0 0 1px var(--ol), 0 2px 0 rgba(0,0,0,.25), 0 0 var(--gw, 0px) var(--gc, transparent);
+    animation: bdayBob 1.2s ease-in-out infinite;
+  }
+  .walker.anv .anv-tag { display: block; }
+  .anv-tag .sp { color: var(--sp, #fff3a8); display: inline-block; animation: twinkle .9s steps(2) infinite; }
+  .anv-tag .sp.b { animation-delay: .45s; }
+  .anv-tag.shine::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.75) 50%, transparent 65%);
+    background-size: 300% 100%; background-repeat: no-repeat;
+    animation: shine var(--shine-dur, 3s) linear infinite;
+  }
+  .a1  { --bg: linear-gradient(180deg,#9be8cb,#3dbb8f); --bd:#effff8; --ol:#1d6b4f; --ts:#1d6b4f; }
+  .a2  { --bg: linear-gradient(180deg,#9ad8ff,#3b9be0); --bd:#eef8ff; --ol:#1b4f7a; --ts:#1b4f7a; }
+  .a3  { --bg: linear-gradient(180deg,#9cb4ff,#4a63e0); --bd:#ffffff; --ol:#232f7a; --ts:#232f7a; --gw:5px; --gc:rgba(140,170,255,.7); }
+  .a4  { --bg: linear-gradient(180deg,#7fdc98,#2e9c55); --bd:#ffe27a; --ol:#1c5a30; --ts:#1c5a30; --gw:6px; --gc:rgba(255,226,122,.7); }
+  .a5  { --bg: linear-gradient(180deg,#ffffff,#cdd6e3 55%,#8c99ad); --fg:#2b3445; --ts:#fff; --bd:#fff; --ol:#4b5568;
+         --gw:7px; --gc:rgba(200,225,255,.9); --sp:#6b7a96; --shine-dur:3s; }
+  .a6  { --bg: linear-gradient(180deg,#d2adff,#7d45e0); --bd:#f3e6ff; --ol:#3d1a7a; --ts:#3d1a7a;
+         --gw:8px; --gc:rgba(199,155,255,.9); --shine-dur:2.8s; }
+  .a7  { --bg: linear-gradient(180deg,#a36bff,#5420b8); --bd:#ffd84a; --ol:#2a0f5e; --ts:#2a0f5e; --sp:#ffd84a;
+         --gw:9px; --gc:rgba(255,216,74,.85); --shine-dur:2.5s; --fs:11px; }
+  .a8  { --bg: linear-gradient(180deg,#ff7a7a,#c4142c); --bd:#ffd84a; --ol:#5e0a14; --ts:#5e0a14; --sp:#ffe680;
+         --gw:10px; --gc:rgba(255,157,74,.95); --shine-dur:2.2s; --fs:11px; }
+  .a8, .a9, .a10 { animation: bdayBob 1.2s ease-in-out infinite, anvGlow 1.6s ease-in-out infinite; }
+  .a9  { --bg: linear-gradient(90deg,#ff5a8a,#ffb23f,#ffe14f,#6fe36b,#4fd1ff,#9c7bff,#ff5a8a);
+         --bd:#fff; --ol:#222; --ts:rgba(0,0,0,.6); --sp:#fff; --gw:11px; --gc:rgba(255,255,255,.95);
+         --shine-dur:2s; --fs:11.5px; background-size: 200% 100%; }
+  .a9  { animation: bdayBob 1.2s ease-in-out infinite, anvGlow 1.6s ease-in-out infinite, rainbow 3s linear infinite; }
+  .a10 { --bg: linear-gradient(180deg,#fffbe0,#ffd84a 45%,#e0a000 75%,#ffe680); --fg:#5a2d00; --ts:#fff6c2;
+         --bd:#fff; --ol:#7a4a00; --sp:#ff5a8a; --gw:13px; --gc:rgba(255,210,60,1); --shine-dur:1.6s; --fs:12.5px;
+         padding: 3px 9px; border-radius: 5px;
+         animation: anvPulse 1.4s ease-in-out infinite, anvRainbowGlow 2.4s linear infinite; }
+  @keyframes anvGlow { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.18); } }
+  @keyframes rainbow { from { background-position: 0 0; } to { background-position: 200% 0; } }
+  @keyframes anvPulse { 0%,100% { transform: translate(-50%, 0) scale(1); } 50% { transform: translate(-50%, -3px) scale(1.06); } }
+  @keyframes anvRainbowGlow {
+    0%   { box-shadow: 0 0 0 1px var(--ol), 0 2px 0 rgba(0,0,0,.25), 0 0 14px 2px #ff5a8a; }
+    25%  { box-shadow: 0 0 0 1px var(--ol), 0 2px 0 rgba(0,0,0,.25), 0 0 14px 2px #ffd23f; }
+    50%  { box-shadow: 0 0 0 1px var(--ol), 0 2px 0 rgba(0,0,0,.25), 0 0 14px 2px #4fd1ff; }
+    75%  { box-shadow: 0 0 0 1px var(--ol), 0 2px 0 rgba(0,0,0,.25), 0 0 14px 2px #c78bff; }
+    100% { box-shadow: 0 0 0 1px var(--ol), 0 2px 0 rgba(0,0,0,.25), 0 0 14px 2px #ff5a8a; }
+  }
   .confetti {
     position: absolute; left: 50%; bottom: 100%; width: 4px; height: 4px;
     pointer-events: none; z-index: 3; box-shadow: 0 0 0 .5px rgba(0,0,0,.25);
@@ -450,6 +500,7 @@ const walkers = MEMBERS.map(([file, name, nw, native]) => {
   const el = document.createElement('div'); el.className = 'walker';
   el.innerHTML = `<div class="shadow"></div><div class="bubble"></div>
     <div class="bday-tag"><span class="sp">✦</span> 🎂 나 오늘 생일! <span class="sp">✦</span></div>
+    <div class="anv-tag"></div>
     <div class="body"><img src="img/${file}" alt="${name}"></div>${labelsHTML(name)}`;
   stage.appendChild(el);
   const w = {
@@ -589,22 +640,74 @@ function isBirthday(name) {
   const p = PROFILES[name], t = new Date();
   return !!p && p.birth === `${t.getMonth() + 1}-${t.getDate()}`;
 }
+/* 입사 N주년 — 입사일과 같은 날(1~10주년). 미리보기: ?anniv=이름:3 / ?anniv=all:7 / ?anniv=demo (1~10 골고루) */
+const ANNIV_FORCE = new URLSearchParams(location.search).get('anniv');
+function annivYears(name, i) {
+  if (ANNIV_FORCE) {
+    if (ANNIV_FORCE === 'demo') return (i % 10) + 1;
+    for (const part of ANNIV_FORCE.split(',')) {
+      const [who, n] = part.split(':');
+      if (who === name || who === 'all') return Math.max(1, Math.min(10, +n || 1));
+    }
+    return 0;
+  }
+  const p = PROFILES[name], t = new Date();
+  if (!p) return 0;
+  const [y, m, d] = p.join.split('-').map(Number);
+  const years = t.getFullYear() - y;
+  return (years >= 1 && t.getMonth() + 1 === m && t.getDate() === d) ? years : 0;
+}
+const ANNIV_STYLE = [   // [앞뒤 아이콘, 반짝이 개수, 빛 지나가기]
+  null,
+  ['🌱', 0, 0], ['🎈', 0, 0], ['🎈', 1, 0], ['🍀', 1, 0], ['🏅', 1, 1],
+  ['💎', 1, 1], ['💎', 2, 1], ['🏆', 2, 1], ['🌈', 2, 1], ['👑', 3, 1],
+];
+const ANNIV_CONFETTI = {
+  5: ['#ffffff', '#dfe8f5', '#a9b8cf', '#8fd3ff'],
+  6: ['#c79bff', '#f1e2ff', '#ffffff', '#ff9fd0'], 7: ['#a36bff', '#ffd84a', '#ffffff', '#ffe680'],
+  8: ['#ff4a5a', '#ffd84a', '#ffe680', '#ffffff', '#ff9f43'],
+  9: ['#ff5a8a', '#ffb23f', '#ffe14f', '#6fe36b', '#4fd1ff', '#9c7bff'],
+  10: ['#ffd84a', '#ffe680', '#ffffff', '#ff5a8a', '#4fd1ff', '#c78bff', '#ffb23f'],
+};
 function updateBirthdays() {
-  walkers.forEach(w => { w.bday = isBirthday(w.name); w.el.classList.toggle('bday', w.bday); });
+  walkers.forEach((w, i) => {
+    w.bday = isBirthday(w.name); w.el.classList.toggle('bday', w.bday);
+    const n = annivYears(w.name, i);
+    if (n !== w.anv) {
+      w.anv = n;
+      const tag = w.el.querySelector('.anv-tag');
+      if (n) {
+        const t = Math.min(10, n), [ic, sp, shine] = ANNIV_STYLE[t];
+        const L = '<span class="sp">✦</span>'.repeat(sp), R = '<span class="sp b">✦</span>'.repeat(sp);
+        tag.className = `anv-tag a${t}${shine ? ' shine' : ''}`;
+        tag.innerHTML = `${L} ${ic} 입사 ${n}주년! ${ic} ${R}`;
+      }
+    }
+    w.el.classList.toggle('anv', !!w.anv);
+    // 배너가 둘이면 생일을 위로 쌓고, 말풍선은 배너 위로
+    const bt = w.el.querySelector('.bday-tag'), at = w.el.querySelector('.anv-tag');
+    const ah = w.anv ? at.offsetHeight + 4 : 0, bh = w.bday ? bt.offsetHeight + 4 : 0;
+    bt.style.marginBottom = (4 + ah) + 'px';
+    w.bubble.style.marginBottom = (ah + bh ? ah + bh + 8 : 12) + 'px';
+  });
 }
 const CONFETTI = ['#ff5a8a', '#ffd23f', '#4fd1ff', '#7cff6b', '#c78bff', '#ffffff', '#ff9f43'];
-function popConfetti(w) {
-  const tag = w.el.querySelector('.bday-tag');
+function popConfetti(w, kind = 'bday') {
+  const isAnv = kind === 'anv', t = isAnv ? Math.min(10, w.anv) : 0;
+  const tag = w.el.querySelector(isAnv ? '.anv-tag' : '.bday-tag');
   const tw = tag.offsetWidth || 90;
+  const colors = (isAnv && ANNIV_CONFETTI[t]) || CONFETTI;
+  const perSide = isAnv ? 5 + t : 9;
+  const lift = tag.offsetHeight / 2 + parseFloat(getComputedStyle(tag).marginBottom || 4);
   for (const side of [-1, 1]) {                         // 양쪽에서 안쪽 위로 '팡!'
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < perSide; i++) {
       const d = document.createElement('div');
       d.className = 'confetti';
-      const sz = Math.random() < .3 ? 5 : 3;
+      const sz = Math.random() < (isAnv && t >= 8 ? .5 : .3) ? 5 : 3;
       d.style.width = d.style.height = sz + 'px';
-      d.style.background = pick(CONFETTI);
+      d.style.background = pick(colors);
       d.style.marginLeft = (side * tw / 2 - sz / 2) + 'px';
-      d.style.marginBottom = '8px';
+      d.style.marginBottom = lift + 'px';
       w.el.appendChild(d);
       const dx = -side * rand(8, 40), up = rand(34, 62), fall = rand(40, 70), rot = rand(-360, 360);
       d.animate([
@@ -633,7 +736,7 @@ function openStat(w) {          // 드래그 시작할 때 열리고, 드래그�
     <div class="bd"><div class="nm">${w.name}</div><div class="rk">${p.rank}</div>
     <div class="row"><span class="lb">MBTI</span><span class="mbti">${p.mbti}</span></div>
     <div class="row"><span class="lb">생일</span><span class="vl">${p.birth.replace('-', '월 ')}일${w.bday ? ' <b style="color:#ff9fd0">🎂 오늘!</b>' : ''}</span></div>
-    <div class="row"><span class="lb">입사</span><span class="vl">${p.join.replace(/-/g, '.')} <b>· ${tenureText(p.join)}</b></span></div>
+    <div class="row"><span class="lb">입사</span><span class="vl">${p.join.replace(/-/g, '.')} <b>· ${tenureText(p.join)}</b>${w.anv ? ` <b style="color:#ffd84a">🎉 ${w.anv}주년!</b>` : ''}</span></div>
     ${p.strengths.length ? `<div class="row" style="align-items:flex-start"><span class="lb" style="margin-top:2px">강점</span>
     <span class="chips">${p.strengths.map(s => `<span class="chip">${s}</span>`).join('')}</span></div>` : ''}</div>`;
   stat.querySelector('.x').addEventListener('click', closeStat);
@@ -721,8 +824,11 @@ function tick(now) {
       positionStat(w, feet);
       if (statHide > 0 && (statHide -= dt) <= 0) closeStat();
     }
-    w.el.style.zIndex = w.state !== 'walk' ? 200 : w.talking > 0 ? 100 : w.bday ? 90 : (w.surf ? 5 : 10 + Math.round(w.depth * 50));
+    w.el.style.zIndex = w.state !== 'walk' ? 200 : w.talking > 0 ? 100 : (w.bday || w.anv) ? 90 : (w.surf ? 5 : 10 + Math.round(w.depth * 50));
     if (w.bday && (w.confT = (w.confT ?? .5) - dt) <= 0) { popConfetti(w); w.confT = rand(2.6, 3.6); }
+    if (w.anv && (w.anvT = (w.anvT ?? 1.2) - dt) <= 0) {                // 주년이 높을수록 자주
+      popConfetti(w, 'anv'); const t = Math.min(10, w.anv); w.anvT = rand(3.6, 4.4) - t * .2;
+    }
 
     if (w.talking > 0) {
       w.talking -= dt;
