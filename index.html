@@ -34,22 +34,27 @@
   }
   .walker.dragging { cursor: grabbing; }
   .shadow {
-    position: absolute; left: 50%; bottom: 16px;
+    position: absolute; left: 50%; bottom: 34px;
     width: 56%; height: 8px; margin-left: -28%;
     background: rgba(0,0,0,.25); border-radius: 50%;
     filter: blur(1px);
   }
   .body {
-    position: absolute; left: 0; bottom: 20px; width: 100%;
+    position: absolute; left: 0; bottom: 38px; width: 100%;
     transform-origin: 50% 100%;
   }
   .body img {
     display: block; width: 100%; height: auto;
     -webkit-user-drag: none; pointer-events: none;
   }
-  .tag {
-    position: absolute; left: 50%; bottom: 0;
+  /* 발밑 이름표 + 칭호 */
+  .labels {
+    position: absolute; left: 50%; top: calc(100% - 37px);
     transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    pointer-events: none;
+  }
+  .tag {
     background: var(--tag-bg); color: var(--tag-fg);
     font-size: 10px; font-weight: 700; line-height: 1;
     padding: 2px 5px; border-radius: 3px;
@@ -57,6 +62,95 @@
     box-shadow: 0 1px 2px rgba(0,0,0,.25);
     white-space: nowrap;
   }
+
+  /* 부팀장 이상 전용 이름표 (그 외는 기본 흰 이름표) */
+  .tag.n-legend {
+    color: #ffe680; font-size: 11px; padding: 3px 7px;
+    background: linear-gradient(180deg, #3b1366 0%, #1d0838 100%);
+    border: 1.5px solid #ffcf3f;
+    text-shadow: 0 0 3px #ffb300;
+    box-shadow: 0 0 5px rgba(255,196,0,.7);
+  }
+  .tag.n-leader {
+    color: #fff;
+    background: linear-gradient(180deg, #23408f 0%, #142a6b 100%);
+    border: 1px solid #f2c94c;
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+  }
+  .tag.n-sub {
+    color: #fff;
+    background: linear-gradient(180deg, #1aa3a3 0%, #0f7272 100%);
+    border: 1px solid #e3f6ff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.35);
+  }
+
+  /* 칭호 공통 */
+  .title {
+    position: relative; overflow: hidden;
+    font-size: 10px; font-weight: 800; line-height: 1; letter-spacing: -.2px;
+    padding: 3px 7px; border-radius: 4px; white-space: nowrap;
+  }
+  .title .ic { display: inline-block; margin: 0 2px; }
+  .title.shine::after {            /* 반짝 지나가는 빛 */
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.75) 50%, transparent 65%);
+    background-size: 300% 100%; background-repeat: no-repeat;
+    animation: shine var(--shine-dur, 3s) linear infinite;
+  }
+  @keyframes shine { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+  @keyframes glow  { 0%,100% { box-shadow: 0 0 4px 1px rgba(255,196,0,.55), inset 0 0 0 1px rgba(255,255,255,.25); }
+                     50%     { box-shadow: 0 0 9px 3px rgba(255,196,0,.9),  inset 0 0 0 1px rgba(255,255,255,.4); } }
+
+  /* 1) 본부장 — 가장 화려하게: 보라·금색, 빛 번쩍 + 금빛 오라 */
+  .t-legend {
+    font-size: 11px; padding: 3px 8px;
+    color: #fff3b0;
+    background: linear-gradient(180deg, #8f3fd9 0%, #4a138a 55%, #2a0a52 100%);
+    border: 2px solid #ffcf3f;
+    text-shadow: 0 0 4px #ffb300, 1px 1px 0 #2a0a52;
+    animation: glow 1.8s ease-in-out infinite;
+    --shine-dur: 2.2s;
+  }
+  .t-legend .ic { color: #ffd84a; text-shadow: 0 0 4px #ff9d00; }
+
+  /* 2) 팀장 — 적당히 화려하게: 남색·금테, 느린 빛 */
+  .t-leader {
+    color: #fff;
+    background: linear-gradient(180deg, #4f7fe8 0%, #1f3f9c 60%, #142a6b 100%);
+    border: 1.5px solid #f2c94c;
+    text-shadow: 1px 1px 0 #0b1a47;
+    box-shadow: 0 1px 3px rgba(0,0,0,.35);
+    --shine-dur: 3.5s;
+  }
+  .t-leader .ic { color: #ffd84a; }
+
+  /* 3) 부팀장 — 무난하게 멋있게: 청록·은테 */
+  .t-sub {
+    color: #fff;
+    background: linear-gradient(180deg, #36c2c2 0%, #138787 100%);
+    border: 1.5px solid #e3f6ff;
+    text-shadow: 1px 1px 0 #0a4f4f;
+    box-shadow: 0 1px 2px rgba(0,0,0,.3);
+    --shine-dur: 5s;
+  }
+  .t-sub .ic { color: #e9fbff; }
+
+  /* 4) 마케터 — 평범하게: 연두 */
+  .t-marketer {
+    color: #2e5a1b;
+    background: linear-gradient(180deg, #f1fbe9 0%, #c6e8ae 100%);
+    border: 1px solid #5f9e3f;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+
+  /* 5) 디자이너 — 평범하게 2: 핑크 */
+  .t-designer {
+    color: #84264f;
+    background: linear-gradient(180deg, #fff0f6 0%, #f8c3da 100%);
+    border: 1px solid #d0608f;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+
   .bubble {
     position: absolute; bottom: 100%; left: 50%;
     margin-bottom: 12px;
@@ -117,6 +211,33 @@ const MEMBERS = [
   ['c13.png','정유진',153,-1], ['c14.png','조소영',148,1],
 ];
 const NATIVE_H = 260;
+const FOOT = 38;   // 발 아래 이름표·칭호 공간(px)
+
+// 칭호 스타일: 칭호 클래스 + 앞뒤 장식 + (부팀장 이상) 전용 이름표 클래스
+const TITLE_STYLES = {
+  legend:   { cls: 't-legend shine',  pre: '♛', post: '♛', tag: 'n-legend' },
+  leader:   { cls: 't-leader shine',  pre: '★', post: '★', tag: 'n-leader' },
+  sub:      { cls: 't-sub shine',     pre: '✦', post: '',  tag: 'n-sub' },
+  marketer: { cls: 't-marketer',      pre: '',  post: '',  tag: '' },
+  designer: { cls: 't-designer',      pre: '',  post: '',  tag: '' },
+};
+// 이름 → [칭호 문구, 스타일]
+const TITLES = {
+  '민길상': ['2본부 본부장', 'legend'],
+  '신동협': ['5팀 팀장', 'leader'],
+  '이원빈': ['5팀 부팀장', 'sub'], '정유진': ['5팀 부팀장', 'sub'],
+  '박정은': ['5팀 마케터', 'marketer'], '소병훈': ['5팀 마케터', 'marketer'], '민경서': ['5팀 마케터', 'marketer'],
+  '정나라': ['5팀 디자이너', 'designer'], '양서진': ['5팀 디자이너', 'designer'], '김수진': ['5팀 디자이너', 'designer'],
+  '김경빈': ['5팀 디자이너', 'designer'], '김지원': ['5팀 디자이너', 'designer'], '조소영': ['5팀 디자이너', 'designer'],
+};
+function labelsHTML(name) {
+  const t = TITLES[name];
+  const s = t ? TITLE_STYLES[t[1]] : null;
+  const ic = c => c ? `<span class="ic">${c}</span>` : '';
+  const tag = `<div class="tag ${s ? s.tag : ''}">${name}</div>`;
+  const title = s ? `<div class="title ${s.cls}">${ic(s.pre)}${t[0]}${ic(s.post)}</div>` : '';
+  return `<div class="labels">${tag}${title}</div>`;
+}
 
 const LINES = [
   '오늘 점심 뭐 먹지?', '커피 수혈이 필요해…', '퇴근까지 몇 시간 남았지?', '월요병 실화냐',
@@ -225,7 +346,7 @@ function nextLine() {
 const walkers = MEMBERS.map(([file, name, nw, native]) => {
   const el = document.createElement('div'); el.className = 'walker';
   el.innerHTML = `<div class="shadow"></div><div class="bubble"></div>
-    <div class="body"><img src="img/${file}" alt="${name}"></div><div class="tag">${name}</div>`;
+    <div class="body"><img src="img/${file}" alt="${name}"></div>${labelsHTML(name)}`;
   stage.appendChild(el);
   const w = {
     el, name,
@@ -290,7 +411,7 @@ function layout() {
     const h = charH * (0.92 + w.depth * 0.08);
     w.h = h; w.w = h * w.ratio;
     w.el.style.width = w.w + 'px';
-    w.el.style.height = (h + 20) + 'px';
+    w.el.style.height = (h + FOOT) + 'px';
     if (!w.placed) { w.x = (W / walkers.length) * (i + rand(.1, .9)) - w.w / 2; w.placed = true; }
   });
 }
@@ -371,7 +492,7 @@ function tick(now) {
     w.shadow.style.transform = `scale(${s})`;
     w.shadow.style.opacity = w.state === 'walk' ? s : 0;
 
-    w.el.style.transform = `translate(${w.x}px, ${-(feet - 20)}px)`;
+    w.el.style.transform = `translate(${w.x}px, ${-(feet - FOOT)}px)`;
     w.el.style.zIndex = w.state !== 'walk' ? 200 : w.talking > 0 ? 100 : (w.surf ? 5 : 10 + Math.round(w.depth * 50));
 
     if (w.talking > 0) {
