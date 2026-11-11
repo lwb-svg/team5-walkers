@@ -84,12 +84,12 @@ const BG = {
   groundBack: 0.245, groundFront: 0.22,
 };
 
-// 캐릭터 그림은 모두 왼쪽을 보고 있음 → 오른쪽으로 갈 때 좌우 반전
+// [파일, 이름, 원본 너비, 그림이 보는 방향(-1 왼쪽 / 1 오른쪽)]
 const MEMBERS = [
-  ['c01.png','김경빈',157], ['c02.png','김수진',143], ['c03.png','김지원',148], ['c04.png','민길상',139],
-  ['c05.png','박정은',128], ['c06.png','변하정',134], ['c07.png','소병훈',149], ['c08.png','신동협',130],
-  ['c09.png','양서진',130], ['c10.png','이원빈',125], ['c11.png','이혜경',160], ['c12.png','정나라',155],
-  ['c13.png','정유진',153], ['c14.png','조소영',148],
+  ['c01.png','김경빈',157,-1], ['c02.png','김수진',143,-1], ['c03.png','김지원',148,-1], ['c04.png','민길상',139,-1],
+  ['c05.png','박정은',128,-1], ['c07.png','소병훈',149,-1], ['c08.png','신동협',130,-1],
+  ['c09.png','양서진',130,-1], ['c10.png','이원빈',125,-1], ['c12.png','정나라',155,-1],
+  ['c13.png','정유진',153,-1], ['c14.png','조소영',148,1],
 ];
 const NATIVE_H = 260;
 
@@ -135,7 +135,7 @@ function nextLine() {
   return l;
 }
 
-const walkers = MEMBERS.map(([file, name, nw]) => {
+const walkers = MEMBERS.map(([file, name, nw, native]) => {
   const el = document.createElement('div'); el.className = 'walker';
   el.innerHTML = `<div class="shadow"></div><div class="bubble"></div>
     <div class="body"><img src="img/${file}" alt="${name}"></div><div class="tag">${name}</div>`;
@@ -144,7 +144,7 @@ const walkers = MEMBERS.map(([file, name, nw]) => {
     el, name,
     body: el.querySelector('.body'), shadow: el.querySelector('.shadow'),
     bubble: el.querySelector('.bubble'),
-    ratio: nw / NATIVE_H,
+    ratio: nw / NATIVE_H, native,
     x: 0, depth: Math.random(),          // 0 = 뒤, 1 = 앞
     dir: Math.random() < .5 ? -1 : 1,
     speed: rand(20, 34),                 // px/s
@@ -221,7 +221,7 @@ function tick(now) {
       w.jump -= dt;
     }
 
-    const face = -w.dir;   // 그림이 왼쪽을 보고 있으므로
+    const face = w.dir * w.native;   // 그림 방향과 이동 방향이 다르면 반전
     w.body.style.transform = `translateY(${-y}px) scaleX(${face})`;
     const s = 1 - Math.min(.4, y / (w.h * .5));
     w.shadow.style.transform = `scale(${s})`; w.shadow.style.opacity = s;
