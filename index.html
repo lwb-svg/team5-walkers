@@ -14,13 +14,12 @@
   }
   html, body {
     margin: 0; height: 100%; overflow: hidden;
-    background: transparent;
+    background: #6fb3f0;
     font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     -webkit-user-select: none; user-select: none;
   }
   #stage {
     position: relative; width: 100%; height: 100%; overflow: hidden;
-    background-color: transparent;
     background-size: cover; background-position: center bottom; background-repeat: no-repeat;
   }
   .walker {
@@ -28,9 +27,9 @@
     will-change: transform; cursor: pointer;
   }
   .shadow {
-    position: absolute; left: 50%; bottom: 14px;
-    width: 56%; height: 9px; margin-left: -28%;
-    background: rgba(0,0,0,.22); border-radius: 50%;
+    position: absolute; left: 50%; bottom: 16px;
+    width: 56%; height: 8px; margin-left: -28%;
+    background: rgba(0,0,0,.25); border-radius: 50%;
     filter: blur(1px);
   }
   .body {
@@ -40,21 +39,20 @@
   .body img {
     display: block; width: 100%; height: auto;
     -webkit-user-drag: none; pointer-events: none;
-    image-rendering: auto;
   }
   .tag {
     position: absolute; left: 50%; bottom: 0;
     transform: translateX(-50%);
     background: var(--tag-bg); color: var(--tag-fg);
     font-size: 11px; font-weight: 700; line-height: 1;
-    padding: 3px 7px 3px; border-radius: 4px;
+    padding: 3px 7px; border-radius: 4px;
     border: 1px solid rgba(0,0,0,.18);
-    box-shadow: 0 1px 2px rgba(0,0,0,.18);
+    box-shadow: 0 1px 2px rgba(0,0,0,.25);
     white-space: nowrap;
   }
   .bubble {
     position: absolute; bottom: 100%; left: 50%;
-    margin-bottom: 4px;
+    margin-bottom: 16px;
     max-width: 170px; width: max-content;
     background: var(--bubble-bg); color: var(--bubble-fg);
     border: 2px solid var(--bubble-line); border-radius: 10px;
@@ -63,7 +61,7 @@
     box-shadow: 0 2px 0 rgba(0,0,0,.15);
     opacity: 0; transform: translate(var(--bx, -50%), 6px) scale(.85);
     transform-origin: 50% 100%;
-    transition: opacity .18s ease, transform .18s ease;
+    transition: opacity .2s ease, transform .2s ease;
     pointer-events: none;
   }
   .bubble.show { opacity: 1; transform: translate(var(--bx, -50%), 0) scale(1); }
@@ -79,15 +77,21 @@
 <div id="stage"></div>
 <script>
 /* ===== 설정 ===== */
-// 배경 이미지 경로 (예: 'img/bg.jpg'). 비워두면 투명 배경.
-const BG_URL = '';
+const BG = {
+  url: 'img/bg.jpg',
+  w: 2000, h: 579,
+  // 이미지 아래쪽에서부터 잔디(발 디딜 곳)까지의 비율: 뒤쪽 ~ 앞쪽
+  groundBack: 0.245, groundFront: 0.22,
+};
 
+// 캐릭터 그림은 모두 왼쪽을 보고 있음 → 오른쪽으로 갈 때 좌우 반전
 const MEMBERS = [
-  ['c01.png','김경빈'], ['c02.png','김수진'], ['c03.png','김지원'], ['c04.png','민길상'],
-  ['c05.png','박정은'], ['c06.png','변하정'], ['c07.png','소병훈'], ['c08.png','신동협'],
-  ['c09.png','양서진'], ['c10.png','이원빈'], ['c11.png','이혜경'], ['c12.png','정나라'],
-  ['c13.png','정유진'], ['c14.png','조소영'],
+  ['c01.png','김경빈',157], ['c02.png','김수진',143], ['c03.png','김지원',148], ['c04.png','민길상',139],
+  ['c05.png','박정은',128], ['c06.png','변하정',134], ['c07.png','소병훈',149], ['c08.png','신동협',130],
+  ['c09.png','양서진',130], ['c10.png','이원빈',125], ['c11.png','이혜경',160], ['c12.png','정나라',155],
+  ['c13.png','정유진',153], ['c14.png','조소영',148],
 ];
+const NATIVE_H = 260;
 
 const LINES = [
   '오늘 점심 뭐 먹지?', '커피 수혈이 필요해…', '퇴근까지 몇 시간 남았지?', '월요병 실화냐',
@@ -107,19 +111,21 @@ const LINES = [
 
 /* ===== 동작 ===== */
 const stage = document.getElementById('stage');
-if (BG_URL) stage.style.backgroundImage = `url("${BG_URL}")`;
+stage.style.backgroundImage = `url("${BG.url}")`;
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = arr => arr[(Math.random() * arr.length) | 0];
-const NATIVE_W = { 'c01.png':157,'c02.png':143,'c03.png':148,'c04.png':139,'c05.png':128,'c06.png':134,'c07.png':149,'c08.png':130,'c09.png':130,'c10.png':125,'c11.png':160,'c12.png':155,'c13.png':153,'c14.png':148 };
-const NATIVE_H = 260;
 
-let W = 0, H = 0, charH = 110;
+let W = 0, H = 0, charH = 100, groundBack = 60, groundFront = 55;
 function measure() {
   W = stage.clientWidth; H = stage.clientHeight;
-  charH = Math.max(60, Math.min(120, H * 0.46));
+  const s = Math.max(W / BG.w, H / BG.h);   // background-size: cover
+  const bgH = BG.h * s;                      // 아래 기준 정렬
+  groundBack = bgH * BG.groundBack;
+  groundFront = bgH * BG.groundFront;
+  const room = H - groundBack;               // 땅 위 남은 공간
+  charH = Math.max(50, Math.min(115, room * 0.55));
 }
-measure();
 
 let recentLines = [];
 function nextLine() {
@@ -129,7 +135,7 @@ function nextLine() {
   return l;
 }
 
-const walkers = MEMBERS.map(([file, name], i) => {
+const walkers = MEMBERS.map(([file, name, nw]) => {
   const el = document.createElement('div'); el.className = 'walker';
   el.innerHTML = `<div class="shadow"></div><div class="bubble"></div>
     <div class="body"><img src="img/${file}" alt="${name}"></div><div class="tag">${name}</div>`;
@@ -138,35 +144,35 @@ const walkers = MEMBERS.map(([file, name], i) => {
     el, name,
     body: el.querySelector('.body'), shadow: el.querySelector('.shadow'),
     bubble: el.querySelector('.bubble'),
-    ratio: NATIVE_W[file] / NATIVE_H,
+    ratio: nw / NATIVE_H,
     x: 0, depth: Math.random(),          // 0 = 뒤, 1 = 앞
     dir: Math.random() < .5 ? -1 : 1,
-    speed: rand(28, 55),                 // px/s
-    hopT: Math.random(), hopDur: rand(.42, .58), hopH: rand(8, 16),
-    bigJump: 0,                          // 남은 큰 점프 시간
-    pause: 0, talking: 0,
+    speed: rand(20, 34),                 // px/s
+    hopT: Math.random(), hopDur: rand(.5, .6), hopH: rand(3, 5),
+    hopAmp: 0,                           // 걷는 중 1, 멈추면 0으로 부드럽게
+    jump: 0, pause: rand(0, 2), talking: 0,
   };
-  el.addEventListener('click', () => { w.bigJump = .7; say(w); });
+  el.addEventListener('click', () => { if (w.jump <= 0) w.jump = .55; say(w); });
   return w;
 });
 
 function layout() {
   measure();
   walkers.forEach((w, i) => {
-    const h = charH * (0.88 + w.depth * 0.12);
+    const h = charH * (0.92 + w.depth * 0.08);
     w.h = h; w.w = h * w.ratio;
     w.el.style.width = w.w + 'px';
     w.el.style.height = (h + 20) + 'px';
-    if (!w.placed) { w.x = (W / walkers.length) * (i + rand(.1, .9)) - w.w / 2; w.placed = true; }
+    if (!w.placed && W > 0) { w.x = (W / walkers.length) * (i + rand(.1, .9)) - w.w / 2; w.placed = true; }
   });
 }
 layout();
-window.addEventListener('resize', layout);
+new ResizeObserver(layout).observe(stage);
 
 function say(w) {
   w.bubble.textContent = nextLine();
-  w.talking = rand(2.8, 3.8);
-  w.pause = Math.max(w.pause, w.talking * .7);
+  w.talking = rand(3, 4);
+  w.pause = Math.max(w.pause, w.talking * .8);   // 말할 때는 멈춰서
   positionBubble(w);
   w.bubble.classList.add('show');
 }
@@ -180,7 +186,7 @@ function positionBubble(w) {
   w.bubble.style.setProperty('--tail', `${50 - shift / bw * 100}%`);
 }
 
-let talkTimer = 1.0;
+let talkTimer = 1.2;
 let last = performance.now();
 function tick(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;
@@ -189,42 +195,39 @@ function tick(now) {
   if (talkTimer <= 0) {
     const free = walkers.filter(w => w.talking <= 0);
     const busy = walkers.length - free.length;
-    if (free.length && busy < 3) say(pick(free));
-    talkTimer = rand(1.0, 2.2);
+    if (free.length && busy < 2) say(pick(free));
+    talkTimer = rand(1.6, 3);
   }
 
   for (const w of walkers) {
-    // 이동
-    if (w.pause > 0) w.pause -= dt;
+    const walking = w.pause <= 0;
+    if (!walking) w.pause -= dt;
     else {
       w.x += w.dir * w.speed * dt;
-      if (Math.random() < dt * 0.25) w.dir *= -1;                 // 가끔 방향 전환
-      if (Math.random() < dt * 0.12) w.pause = rand(.6, 1.8);     // 가끔 멈춤
-      if (Math.random() < dt * 0.08) w.bigJump = .7;              // 가끔 큰 점프
+      if (Math.random() < dt * 0.15) w.dir *= -1;                 // 가끔 뒤돌기
+      if (Math.random() < dt * 0.18) w.pause = rand(1, 3);        // 가끔 멈춰 서기
     }
+    if (!w.placed) continue;
     if (w.x < 0) { w.x = 0; w.dir = 1; }
     if (w.x > W - w.w) { w.x = W - w.w; w.dir = -1; }
 
-    // 통통 튀기
+    // 걸을 때만 가볍게 통통
+    w.hopAmp += ((walking ? 1 : 0) - w.hopAmp) * Math.min(1, dt * 6);
     w.hopT += dt / w.hopDur;
-    const p = w.hopT % 1;
-    let y = Math.sin(p * Math.PI) * w.hopH * (w.pause > 0 ? .45 : 1);
-    if (w.bigJump > 0) {
-      const q = 1 - w.bigJump / .7;
-      y = Math.max(y, Math.sin(q * Math.PI) * w.h * .42);
-      w.bigJump -= dt;
+    let y = Math.abs(Math.sin(w.hopT * Math.PI)) * w.hopH * w.hopAmp;
+    if (w.jump > 0) {
+      const q = 1 - w.jump / .55;
+      y = Math.max(y, Math.sin(q * Math.PI) * w.h * .25);
+      w.jump -= dt;
     }
-    // 착지할 때 찌그러짐
-    const land = p < .12 ? (1 - p / .12) : (p > .92 ? (p - .92) / .08 : 0);
-    const sq = w.bigJump > 0 ? 0 : land * .1;
-    const sx = (1 + sq) * w.dir, sy = 1 - sq;
 
-    w.body.style.transform = `translateY(${-y}px) scale(${sx}, ${sy})`;
-    const s = 1 - Math.min(.5, y / (w.h * .6));
+    const face = -w.dir;   // 그림이 왼쪽을 보고 있으므로
+    w.body.style.transform = `translateY(${-y}px) scaleX(${face})`;
+    const s = 1 - Math.min(.4, y / (w.h * .5));
     w.shadow.style.transform = `scale(${s})`; w.shadow.style.opacity = s;
 
-    const groundY = 6 + (1 - w.depth) * Math.min(26, H * .1);
-    w.el.style.transform = `translate(${w.x}px, ${-groundY}px)`;
+    const feet = groundBack + (groundFront - groundBack) * w.depth;
+    w.el.style.transform = `translate(${w.x}px, ${-(feet - 20)}px)`;
     w.el.style.zIndex = w.talking > 0 ? 100 : Math.round(w.depth * 50);
 
     if (w.talking > 0) {
