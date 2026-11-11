@@ -44,15 +44,15 @@
     position: absolute; left: 50%; bottom: 0;
     transform: translateX(-50%);
     background: var(--tag-bg); color: var(--tag-fg);
-    font-size: 11px; font-weight: 700; line-height: 1;
-    padding: 3px 7px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; line-height: 1;
+    padding: 2px 5px; border-radius: 3px;
     border: 1px solid rgba(0,0,0,.18);
     box-shadow: 0 1px 2px rgba(0,0,0,.25);
     white-space: nowrap;
   }
   .bubble {
     position: absolute; bottom: 100%; left: 50%;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     max-width: 170px; width: max-content;
     background: var(--bubble-bg); color: var(--bubble-fg);
     border: 2px solid var(--bubble-line); border-radius: 10px;
@@ -124,7 +124,7 @@ function measure() {
   groundBack = bgH * BG.groundBack;
   groundFront = bgH * BG.groundFront;
   const room = H - groundBack;               // 땅 위 남은 공간
-  charH = Math.max(45, Math.min(85, room * 0.4));
+  charH = Math.max(36, Math.min(58, room * 0.27));
 }
 
 let recentLines = [];
