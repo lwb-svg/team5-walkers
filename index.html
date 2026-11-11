@@ -173,6 +173,28 @@
   .bubble::before { border-width: 8px 7px 0; border-top-color: var(--bubble-line); margin-left: -7px; }
   .bubble::after  { border-width: 5px 5px 0; border-top-color: var(--bubble-bg); margin-left: -5px; margin-top: -1px; }
 
+  /* 생일 — 머리 위 배너 + 빵빠레 도트 */
+  .bday-tag {
+    position: absolute; bottom: 100%; left: 50%; margin-bottom: 4px;
+    display: none; white-space: nowrap; pointer-events: none;
+    font-size: 10.5px; font-weight: 800; color: #fff; letter-spacing: .02em;
+    background: linear-gradient(180deg, #ff86bd, #e2457f);
+    border: 2px solid #fff3a8; border-radius: 4px; padding: 2px 7px 2px;
+    box-shadow: 0 0 0 1px #8a1d47, 0 2px 0 rgba(0,0,0,.25), 0 0 10px rgba(255,180,220,.8);
+    text-shadow: 0 1px 0 #8a1d47;
+    animation: bdayBob 1.2s ease-in-out infinite;
+  }
+  .bday-tag .sp { color: #fff3a8; display: inline-block; animation: twinkle .9s steps(2) infinite; }
+  .bday-tag .sp + .sp { animation-delay: .45s; }
+  .walker.bday .bday-tag { display: block; }
+  .walker.bday .bubble { margin-bottom: 32px; }
+  @keyframes bdayBob { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -3px); } }
+  @keyframes twinkle { 0% { opacity: 1; } 100% { opacity: .2; } }
+  .confetti {
+    position: absolute; left: 50%; bottom: 100%; width: 4px; height: 4px;
+    pointer-events: none; z-index: 3; box-shadow: 0 0 0 .5px rgba(0,0,0,.25);
+  }
+
   /* 스탯창 (캐릭터 클릭) */
   .stat {
     position: absolute; z-index: 500; width: 172px;
@@ -427,6 +449,7 @@ function nextSpeaker() {
 const walkers = MEMBERS.map(([file, name, nw, native]) => {
   const el = document.createElement('div'); el.className = 'walker';
   el.innerHTML = `<div class="shadow"></div><div class="bubble"></div>
+    <div class="bday-tag"><span class="sp">✦</span> 🎂 나 오늘 생일! <span class="sp">✦</span></div>
     <div class="body"><img src="img/${file}" alt="${name}"></div>${labelsHTML(name)}`;
   stage.appendChild(el);
   const w = {
@@ -559,6 +582,39 @@ const PROFILES = {
   '김지원': { rank: '팀원 (디자이너)',    mbti: 'INTP', birth: '8-3',   join: '2026-09-28', strengths: ['최상화', '책임', '절친', '적응', '전략'] },
   '조소영': { rank: '팀원 (디자이너)',    mbti: 'ENFP', birth: '12-24', join: '2026-09-28', strengths: ['미래지향', '개별화', '발상', '수집', '전략'] },
 };
+/* 생일 — 그날 하루 종일 배너 + 몇 초마다 빵빠레. 미리보기: ?bday=이름 (여러 명은 쉼표, 전원은 all) */
+const BDAY_FORCE = new URLSearchParams(location.search).get('bday');
+function isBirthday(name) {
+  if (BDAY_FORCE) return BDAY_FORCE === 'all' || BDAY_FORCE.split(',').includes(name);
+  const p = PROFILES[name], t = new Date();
+  return !!p && p.birth === `${t.getMonth() + 1}-${t.getDate()}`;
+}
+function updateBirthdays() {
+  walkers.forEach(w => { w.bday = isBirthday(w.name); w.el.classList.toggle('bday', w.bday); });
+}
+const CONFETTI = ['#ff5a8a', '#ffd23f', '#4fd1ff', '#7cff6b', '#c78bff', '#ffffff', '#ff9f43'];
+function popConfetti(w) {
+  const tag = w.el.querySelector('.bday-tag');
+  const tw = tag.offsetWidth || 90;
+  for (const side of [-1, 1]) {                         // 양쪽에서 안쪽 위로 '팡!'
+    for (let i = 0; i < 9; i++) {
+      const d = document.createElement('div');
+      d.className = 'confetti';
+      const sz = Math.random() < .3 ? 5 : 3;
+      d.style.width = d.style.height = sz + 'px';
+      d.style.background = pick(CONFETTI);
+      d.style.marginLeft = (side * tw / 2 - sz / 2) + 'px';
+      d.style.marginBottom = '8px';
+      w.el.appendChild(d);
+      const dx = -side * rand(8, 40), up = rand(34, 62), fall = rand(40, 70), rot = rand(-360, 360);
+      d.animate([
+        { transform: 'translate(0,0) rotate(0)', opacity: 1 },
+        { transform: `translate(${dx}px,${-up}px) rotate(${rot / 2}deg)`, opacity: 1, offset: .35 },
+        { transform: `translate(${dx * 1.4}px,${-up + fall}px) rotate(${rot}deg)`, opacity: 0 },
+      ], { duration: rand(1300, 1800), easing: 'cubic-bezier(.15,.7,.35,1)' }).onfinish = () => d.remove();
+    }
+  }
+}
 function tenureText(join) {
   const [y, m, d] = join.split('-').map(Number), t = new Date();
   const mo = (t.getFullYear() - y) * 12 + (t.getMonth() + 1 - m) - (t.getDate() < d ? 1 : 0);
@@ -576,7 +632,7 @@ function openStat(w) {          // 드래그 시작할 때 열리고, 드래그�
   stat.innerHTML = `<div class="hd"><span>CHARACTER INFO</span><span class="x">✕</span></div>
     <div class="bd"><div class="nm">${w.name}</div><div class="rk">${p.rank}</div>
     <div class="row"><span class="lb">MBTI</span><span class="mbti">${p.mbti}</span></div>
-    <div class="row"><span class="lb">생일</span><span class="vl">${p.birth.replace('-', '월 ')}일</span></div>
+    <div class="row"><span class="lb">생일</span><span class="vl">${p.birth.replace('-', '월 ')}일${w.bday ? ' <b style="color:#ff9fd0">🎂 오늘!</b>' : ''}</span></div>
     <div class="row"><span class="lb">입사</span><span class="vl">${p.join.replace(/-/g, '.')} <b>· ${tenureText(p.join)}</b></span></div>
     ${p.strengths.length ? `<div class="row" style="align-items:flex-start"><span class="lb" style="margin-top:2px">강점</span>
     <span class="chips">${p.strengths.map(s => `<span class="chip">${s}</span>`).join('')}</span></div>` : ''}</div>`;
@@ -596,6 +652,9 @@ function positionStat(w, feet) {
 }
 function closeStat() { stat.classList.remove('show'); statOwner = null; statHide = 0; }
 stage.addEventListener('pointerdown', e => { if (!e.target.closest('.walker')) closeStat(); });
+
+updateBirthdays();
+setInterval(updateBirthdays, 60 * 1000);   // 자정 넘어가면 자동으로 바뀜
 
 let talkTimer = 1.2;
 let last = performance.now();
@@ -662,7 +721,8 @@ function tick(now) {
       positionStat(w, feet);
       if (statHide > 0 && (statHide -= dt) <= 0) closeStat();
     }
-    w.el.style.zIndex = w.state !== 'walk' ? 200 : w.talking > 0 ? 100 : (w.surf ? 5 : 10 + Math.round(w.depth * 50));
+    w.el.style.zIndex = w.state !== 'walk' ? 200 : w.talking > 0 ? 100 : w.bday ? 90 : (w.surf ? 5 : 10 + Math.round(w.depth * 50));
+    if (w.bday && (w.confT = (w.confT ?? .5) - dt) <= 0) { popConfetti(w); w.confT = rand(2.6, 3.6); }
 
     if (w.talking > 0) {
       w.talking -= dt;
