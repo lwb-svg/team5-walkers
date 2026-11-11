@@ -239,21 +239,47 @@ function labelsHTML(name) {
   return `<div class="labels">${tag}${title}</div>`;
 }
 
-const LINES = [
+// 대사 총 100종: 공통 40 + 직급별 12 × 5
+// 말할 때마다 절반은 직급 대사, 절반은 공통 대사에서 랜덤
+const LINES_COMMON = [
   '오늘 점심 뭐 먹지?', '커피 수혈이 필요해…', '퇴근까지 몇 시간 남았지?', '월요병 실화냐',
   '불금이다!!', '회의 또 있어요?', '이거 오늘까지예요?', '메일 확인 부탁드려요~',
-  '보고서 다 썼다!', '야근은 안 돼… 제발', '광고 성과 잘 나왔다!', 'ROAS 미쳤다 🔥',
-  '소재 컨펌 났어요!', '피드백 반영 완료!', '아이디어 떠올랐어!', '잠깐 스트레칭 좀…',
+  '보고서 다 썼다!', '야근은 안 돼… 제발', '아이디어 떠올랐어!', '잠깐 스트레칭 좀…',
   '아아 한 잔 하실 분?', '오늘도 화이팅!', '수고하셨습니다~', '좋은 아침이에요!',
   '탕비실 간식 털러 간다', '엑셀 함수 아시는 분?', '마감 D-1…', '오늘 날씨 좋다~',
   '주말 언제 와…', '이번 주 너무 길다', '점심 먹고 졸려…', '내일 연차예요 😎',
-  '월급날 언제야', '팀장님 찾으세요?', '자료 공유드렸어요!', '캘린더 확인해주세요~',
-  '오늘 회식인가요?', '배고파…', '집에 가고 싶다', '클라이언트 연락 왔어요!',
-  '카피 한 줄만 더…', '썸네일 뭐가 나아요?', '대박 아이디어 있어!', '오늘 일 다 했다!',
-  '간식 사왔어요~', '노트북 배터리 3%…', '와이파이 왜 이래', '잠깐 회의실 쓸게요',
-  '이번 캠페인 잘될 거야!', '우리 팀 최고!', '하이파이브! 🖐', '칼퇴 가즈아!',
-  '조금만 더 힘내요!', '오늘도 수고 많았어요',
+  '월급날 언제야', '자료 공유드렸어요!', '캘린더 확인해주세요~', '오늘 회식인가요?',
+  '배고파…', '집에 가고 싶다', '클라이언트 연락 왔어요!', '대박 아이디어 있어!',
+  '오늘 일 다 했다!', '간식 사왔어요~', '노트북 배터리 3%…', '와이파이 왜 이래',
+  '잠깐 회의실 쓸게요', '우리 팀 최고!', '하이파이브! 🖐', '칼퇴 가즈아!',
 ];
+const LINES_BY_ROLE = {
+  legend: [   // 본부장
+    '다들 고생 많아요~', '이번 분기 목표 달성 가보자!', '2본부 최고야 👍', '회의는 짧고 굵게!',
+    '오늘 점심은 내가 쏜다!', '보고서 잘 봤어요', '숫자로 보여줍시다', '5팀 요즘 분위기 좋네~',
+    '본부 회의 들어갑니다', '좋은 아이디어 환영이에요', '다음 주 전략 회의 준비해주세요', '건강 챙기면서 일해요',
+  ],
+  leader: [   // 팀장
+    '5팀 모여봐요~', '이번 캠페인 잘 마무리합시다!', '데일리 미팅 10분만!', '일정 공유 부탁해요',
+    '다들 너무 잘하고 있어요', '리포트 오늘 중으로 정리해줘요', '광고주 미팅 다녀올게요', '이슈 있으면 바로 말해줘요',
+    '우리 팀 성과 최고다!', '야근 금지! 칼퇴합시다', '이번 주 우선순위 정리하자', '커피 한 잔 하면서 얘기해요',
+  ],
+  sub: [      // 부팀장
+    '제가 체크해볼게요!', '자료 취합 완료했습니다', '일정 다시 한번 확인해요~', '팀장님께 보고 들어가요',
+    '막히는 거 있으면 물어봐요', '오늘 업무 리스트 공유했어요', '피드백 정리해서 드릴게요', '같이 해결해봐요!',
+    '마감 일정 놓치지 말기!', '회의록 올려뒀어요', '좋아요, 그렇게 진행하죠', '잠깐 싱크 맞춰요',
+  ],
+  marketer: [ // 마케터
+    'ROAS 미쳤다 🔥', 'CTR 올랐어요!', '소재 테스트 돌려볼게요', '타겟 다시 잡아볼까요?',
+    '광고비 소진 체크!', '경쟁사 광고 봤어요?', '카피 한 줄만 더…', '리포트 숫자 맞추는 중…',
+    '전환율 올랐다!!', 'A/B 테스트 결과 나왔어요', '이번 소재 반응 좋아요', '매체 세팅 완료!',
+  ],
+  designer: [ // 디자이너
+    '시안 3개 보내드렸어요!', '이 폰트 어때요?', '썸네일 뭐가 나아요?', '여백의 미…',
+    '1px만 옮길게요', '최종_진짜최종.psd', '색감 다시 잡아볼게요', '수정사항 반영 완료!',
+    '레퍼런스 찾는 중…', '픽셀 깨지는 거 못 참아', '배너 사이즈 몇이에요?', '로고 키워달래요…',
+  ],
+};
 
 /* ===== 동작 ===== */
 const stage = document.getElementById('stage');
@@ -336,11 +362,25 @@ function landingSurface(w) {
 }
 
 let recentLines = [];
-function nextLine() {
+function nextLine(w) {
+  const role = TITLES[w.name] && TITLES[w.name][1];
+  const pool = role && LINES_BY_ROLE[role] && Math.random() < .5 ? LINES_BY_ROLE[role] : LINES_COMMON;
   let l, guard = 0;
-  do { l = pick(LINES); } while (recentLines.includes(l) && ++guard < 20);
-  recentLines.push(l); if (recentLines.length > 15) recentLines.shift();
+  do { l = pick(pool); } while (recentLines.includes(l) && ++guard < 30);
+  recentLines.push(l); if (recentLines.length > 20) recentLines.shift();
   return l;
+}
+
+// 모두 골고루 말하도록: 섞은 순서대로 돌아가며, 한 바퀴 끝나면 다시 섞기
+let speakQueue = [];
+function nextSpeaker() {
+  for (let tries = 0; tries < 2; tries++) {
+    if (!speakQueue.length) speakQueue = walkers.slice().sort(() => Math.random() - .5);
+    const i = speakQueue.findIndex(w => w.talking <= 0 && w.state === 'walk');
+    if (i >= 0) return speakQueue.splice(i, 1)[0];
+    if (tries === 0 && speakQueue.length < walkers.length) speakQueue = [];
+  }
+  return null;
 }
 
 const walkers = MEMBERS.map(([file, name, nw, native]) => {
@@ -419,7 +459,7 @@ layout();
 new ResizeObserver(layout).observe(stage);
 
 function say(w) {
-  w.bubble.textContent = nextLine();
+  w.bubble.textContent = nextLine(w);
   w.talking = rand(3, 4);
   w.pause = Math.max(w.pause, w.talking * .8);   // 말할 때는 멈춰서
   positionBubble(w);
@@ -442,9 +482,8 @@ function tick(now) {
 
   talkTimer -= dt;
   if (talkTimer <= 0) {
-    const free = walkers.filter(w => w.talking <= 0);
-    const busy = walkers.length - free.length;
-    if (free.length && busy < 2) say(pick(free));
+    const busy = walkers.filter(w => w.talking > 0).length;
+    if (busy < 2) { const s = nextSpeaker(); if (s) say(s); }
     talkTimer = rand(1.6, 3);
   }
 
