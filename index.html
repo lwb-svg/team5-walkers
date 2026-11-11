@@ -172,6 +172,45 @@
   }
   .bubble::before { border-width: 8px 7px 0; border-top-color: var(--bubble-line); margin-left: -7px; }
   .bubble::after  { border-width: 5px 5px 0; border-top-color: var(--bubble-bg); margin-left: -5px; margin-top: -1px; }
+
+  /* 스탯창 (캐릭터 클릭) */
+  .stat {
+    position: absolute; z-index: 500; width: 172px;
+    background: linear-gradient(180deg, rgba(38,46,74,.96), rgba(22,27,46,.96));
+    border: 2px solid #c9a24a; border-radius: 6px;
+    box-shadow: 0 0 0 1px #2a1d05, 0 4px 12px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    color: #e9ecf5; font-size: 11px; line-height: 1.3;
+    opacity: 0; transform: scale(.9); transform-origin: var(--ox, 0) 100%;
+    transition: opacity .15s ease, transform .15s ease;
+    pointer-events: none; user-select: none;
+  }
+  .stat.show { opacity: 1; transform: scale(1); pointer-events: auto; }
+  .stat .hd {
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(180deg, #6b5420, #3f300f);
+    border-bottom: 1px solid #c9a24a; padding: 3px 6px 3px 8px;
+    font-size: 10px; font-weight: 800; letter-spacing: .08em; color: #f7dc8a;
+  }
+  .stat .x {
+    width: 14px; height: 14px; line-height: 12px; text-align: center; cursor: pointer;
+    border: 1px solid #c9a24a; border-radius: 2px; background: #2a2010; color: #f7dc8a; font-size: 10px;
+  }
+  .stat .x:hover { background: #5a4518; }
+  .stat .bd { padding: 7px 8px 8px; }
+  .stat .nm { font-size: 14px; font-weight: 800; color: #fff; }
+  .stat .rk { color: #aeb8d6; font-size: 10.5px; margin-top: 1px; }
+  .stat .row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  .stat .lb { color: #f7dc8a; font-size: 9.5px; font-weight: 800; width: 34px; flex: none; }
+  .stat .mbti {
+    background: linear-gradient(180deg, #ff9fd0, #d8589b); color: #fff; font-weight: 800;
+    border-radius: 3px; padding: 1px 6px; font-size: 10.5px; letter-spacing: .06em;
+    text-shadow: 0 1px 0 rgba(0,0,0,.25);
+  }
+  .stat .chips { display: flex; flex-wrap: wrap; gap: 3px; }
+  .stat .chip {
+    background: rgba(255,255,255,.08); border: 1px solid rgba(201,162,74,.6); color: #ffe9a8;
+    border-radius: 3px; padding: 1px 5px; font-size: 10px; font-weight: 700;
+  }
 </style>
 </head>
 <body>
@@ -424,7 +463,7 @@ function attachDrag(w) {
     if (!down) return;
     const [px, py] = toLocal(e);
     if (!moved && Math.hypot(px - startX, py - startY) < 5) return;
-    if (!moved) { moved = true; w.state = 'drag'; w.el.classList.add('dragging'); }
+    if (!moved) { moved = true; w.state = 'drag'; w.el.classList.add('dragging'); if (statOwner === w) closeStat(); }
     w.x = Math.max(0, Math.min(W - w.w, px - offX));
     w.fb = Math.max(0, Math.min(H - w.h * .3, (H - py) - offY));
   });
@@ -433,7 +472,7 @@ function attachDrag(w) {
     down = false;
     w.el.classList.remove('dragging');
     if (moved) { w.state = 'fall'; w.pause = rand(.8, 1.5); }
-    else { if (w.jump <= 0) w.jump = .55; say(w); }
+    else { if (w.jump <= 0) w.jump = .55; say(w); openStat(w); }
   };
   w.el.addEventListener('pointerup', up);
   w.el.addEventListener('pointercancel', up);
@@ -501,6 +540,39 @@ function positionBubble(w) {
   w.bubble.style.setProperty('--tail', `${50 - shift / bw * 100}%`);
 }
 
+/* 스탯창 — 프로필이 있는 사람만 (지금은 테스트로 신동협만) */
+const PROFILES = {
+  '신동협': { rank: '팀장 (마케터)', mbti: 'ENFP', strengths: ['신념', '최상화', '공감', '사교성', '승부'] },
+};
+const stat = document.createElement('div');
+stat.className = 'stat';
+stat.addEventListener('pointerdown', e => e.stopPropagation());
+stage.appendChild(stat);
+let statOwner = null;
+function openStat(w) {
+  const p = PROFILES[w.name];
+  if (!p) return;
+  statOwner = w;
+  stat.innerHTML = `<div class="hd"><span>CHARACTER INFO</span><span class="x">✕</span></div>
+    <div class="bd"><div class="nm">${w.name}</div><div class="rk">${p.rank}</div>
+    <div class="row"><span class="lb">MBTI</span><span class="mbti">${p.mbti}</span></div>
+    <div class="row" style="align-items:flex-start"><span class="lb" style="margin-top:2px">강점</span>
+    <span class="chips">${p.strengths.map(s => `<span class="chip">${s}</span>`).join('')}</span></div></div>`;
+  stat.querySelector('.x').addEventListener('click', closeStat);
+  // 캐릭터 옆(오른쪽 우선)에 띄우고 화면 밖으로 안 나가게
+  const cw = stat.offsetWidth, ch = stat.offsetHeight;
+  const feet = surfaceFeet(w, w.surf);
+  let left = w.x + w.w + 8, ox = '0';
+  if (left + cw > W - 4) { left = w.x - cw - 8; ox = '100%'; }
+  left = Math.max(4, Math.min(W - cw - 4, left));
+  const top = Math.max(4, Math.min(H - ch - 4, H - feet - w.h - 10));
+  stat.style.left = left + 'px'; stat.style.top = top + 'px';
+  stat.style.setProperty('--ox', ox);
+  stat.classList.add('show');
+}
+function closeStat() { stat.classList.remove('show'); statOwner = null; }
+stage.addEventListener('pointerdown', e => { if (!e.target.closest('.walker')) closeStat(); });
+
 let talkTimer = 1.2;
 let last = performance.now();
 function tick(now) {
@@ -528,6 +600,7 @@ function tick(now) {
       if (w.fb <= tf) { w.fb = tf; w.surf = target; w.state = 'walk'; }
       feet = w.fb;
     } else {
+      if (w === statOwner) w.pause = Math.max(w.pause, .3);       // 스탯창 열려 있으면 제자리에
       const walking = w.pause <= 0;
       if (!walking) w.pause -= dt;
       else {
