@@ -20,10 +20,14 @@
   }
   #stage {
     position: relative; width: 100%; height: 100%; overflow: hidden;
-    /* 배경은 항상 가로 전체가 보이게 (위쪽 남는 공간은 하늘색) */
-    background-color: #0767f7;
-    background-size: 100% auto; background-position: center bottom; background-repeat: no-repeat;
   }
+  /* 배경은 항상 가로 전체가 보이게 (위쪽 남는 공간은 하늘색). 시간대별 레이어를 겹쳐 두고 서서히 전환 */
+  .bg {
+    position: absolute; inset: 0; z-index: 0;
+    background-size: 100% auto; background-position: center bottom; background-repeat: no-repeat;
+    opacity: 0; transition: opacity 2.5s ease;
+  }
+  .bg.on { opacity: 1; }
   .walker {
     position: absolute; left: 0; bottom: 0;
     will-change: transform; cursor: grab; touch-action: none;
@@ -80,8 +84,20 @@
 <div id="stage"></div>
 <script>
 /* ===== 설정 ===== */
+// 시간대별 배경 (세 이미지 모두 땅·발판 위치가 같도록 맞춰 둠)
+const SCENES = {
+  day:    { url: 'img/bg.jpg',        sky: '#0767f7' },
+  sunset: { url: 'img/bg-sunset.jpg', sky: '#4180d8' },
+  night:  { url: 'img/bg-night.jpg',  sky: '#000b2e' },
+};
+// 낮 08~17시 / 노을 06~08시, 17~19시 / 밤 19~06시
+function sceneForHour(h) {
+  if (h >= 8 && h < 17) return 'day';
+  if ((h >= 17 && h < 19) || (h >= 6 && h < 8)) return 'sunset';
+  return 'night';
+}
+
 const BG = {
-  url: 'img/bg.jpg',
   w: 2000, h: 579,
   // 이미지 아래쪽에서부터 잔디(발 디딜 곳)까지의 비율: 뒤쪽 ~ 앞쪽
   groundBack: 0.245, groundFront: 0.22,
@@ -120,7 +136,28 @@ const LINES = [
 
 /* ===== 동작 ===== */
 const stage = document.getElementById('stage');
-stage.style.backgroundImage = `url("${BG.url}")`;
+
+// 배경 레이어 만들기 + 시간에 맞춰 전환 (주소 뒤에 ?scene=night 처럼 붙이면 강제로 고정)
+const bgLayers = {};
+for (const [key, s] of Object.entries(SCENES)) {
+  const d = document.createElement('div');
+  d.className = 'bg';
+  d.style.backgroundColor = s.sky;
+  d.style.backgroundImage = `url("${s.url}")`;
+  stage.appendChild(d);
+  bgLayers[key] = d;
+}
+const forcedScene = new URLSearchParams(location.search).get('scene');
+let currentScene = null;
+function updateScene() {
+  const key = SCENES[forcedScene] ? forcedScene : sceneForHour(new Date().getHours());
+  if (key === currentScene) return;
+  currentScene = key;
+  document.body.style.background = SCENES[key].sky;
+  for (const [k, d] of Object.entries(bgLayers)) d.classList.toggle('on', k === key);
+}
+updateScene();
+setInterval(updateScene, 30 * 1000);
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = arr => arr[(Math.random() * arr.length) | 0];
