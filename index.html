@@ -463,7 +463,7 @@ function attachDrag(w) {
     if (!down) return;
     const [px, py] = toLocal(e);
     if (!moved && Math.hypot(px - startX, py - startY) < 5) return;
-    if (!moved) { moved = true; w.state = 'drag'; w.el.classList.add('dragging'); if (statOwner === w) closeStat(); }
+    if (!moved) { moved = true; w.state = 'drag'; w.el.classList.add('dragging'); openStat(w); }
     w.x = Math.max(0, Math.min(W - w.w, px - offX));
     w.fb = Math.max(0, Math.min(H - w.h * .3, (H - py) - offY));
   });
@@ -472,7 +472,7 @@ function attachDrag(w) {
     down = false;
     w.el.classList.remove('dragging');
     if (moved) { w.state = 'fall'; w.pause = rand(.8, 1.5); }
-    else { if (w.jump <= 0) w.jump = .55; say(w); openStat(w); }
+    else { if (w.jump <= 0) w.jump = .55; say(w); }
   };
   w.el.addEventListener('pointerup', up);
   w.el.addEventListener('pointercancel', up);
@@ -548,29 +548,31 @@ const stat = document.createElement('div');
 stat.className = 'stat';
 stat.addEventListener('pointerdown', e => e.stopPropagation());
 stage.appendChild(stat);
-let statOwner = null;
-function openStat(w) {
+let statOwner = null, statHide = 0;
+function openStat(w) {          // 드래그 시작할 때 열리고, 드래그·낙하 동안 따라다님
   const p = PROFILES[w.name];
-  if (!p) return;
-  statOwner = w;
+  if (!p) { closeStat(); return; }
+  statOwner = w; statHide = 0;
   stat.innerHTML = `<div class="hd"><span>CHARACTER INFO</span><span class="x">✕</span></div>
     <div class="bd"><div class="nm">${w.name}</div><div class="rk">${p.rank}</div>
     <div class="row"><span class="lb">MBTI</span><span class="mbti">${p.mbti}</span></div>
     <div class="row" style="align-items:flex-start"><span class="lb" style="margin-top:2px">강점</span>
     <span class="chips">${p.strengths.map(s => `<span class="chip">${s}</span>`).join('')}</span></div></div>`;
   stat.querySelector('.x').addEventListener('click', closeStat);
-  // 캐릭터 옆(오른쪽 우선)에 띄우고 화면 밖으로 안 나가게
+  positionStat(w, w.state === 'walk' ? surfaceFeet(w, w.surf) : w.fb);
+  stat.classList.add('show');
+}
+// 캐릭터 옆(오른쪽 우선)에 붙이고 화면 밖으로 안 나가게
+function positionStat(w, feet) {
   const cw = stat.offsetWidth, ch = stat.offsetHeight;
-  const feet = surfaceFeet(w, w.surf);
   let left = w.x + w.w + 8, ox = '0';
   if (left + cw > W - 4) { left = w.x - cw - 8; ox = '100%'; }
   left = Math.max(4, Math.min(W - cw - 4, left));
   const top = Math.max(4, Math.min(H - ch - 4, H - feet - w.h - 10));
   stat.style.left = left + 'px'; stat.style.top = top + 'px';
   stat.style.setProperty('--ox', ox);
-  stat.classList.add('show');
 }
-function closeStat() { stat.classList.remove('show'); statOwner = null; }
+function closeStat() { stat.classList.remove('show'); statOwner = null; statHide = 0; }
 stage.addEventListener('pointerdown', e => { if (!e.target.closest('.walker')) closeStat(); });
 
 let talkTimer = 1.2;
@@ -597,7 +599,10 @@ function tick(now) {
       const tf = surfaceFeet(w, target);
       w.fb -= FALL_SPEED * dt;
       tilt = Math.sin(now / 200) * 3;
-      if (w.fb <= tf) { w.fb = tf; w.surf = target; w.state = 'walk'; }
+      if (w.fb <= tf) {
+        w.fb = tf; w.surf = target; w.state = 'walk';
+        if (statOwner === w) statHide = 1.5;                       // 착지하고 잠깐 뒤 닫기
+      }
       feet = w.fb;
     } else {
       if (w === statOwner) w.pause = Math.max(w.pause, .3);       // 스탯창 열려 있으면 제자리에
@@ -631,6 +636,10 @@ function tick(now) {
     w.shadow.style.opacity = w.state === 'walk' ? s : 0;
 
     w.el.style.transform = `translate(${w.x}px, ${-(feet - FOOT)}px)`;
+    if (w === statOwner) {
+      positionStat(w, feet);
+      if (statHide > 0 && (statHide -= dt) <= 0) closeStat();
+    }
     w.el.style.zIndex = w.state !== 'walk' ? 200 : w.talking > 0 ? 100 : (w.surf ? 5 : 10 + Math.round(w.depth * 50));
 
     if (w.talking > 0) {
