@@ -156,8 +156,29 @@ function updateScene() {
   document.body.style.background = SCENES[key].sky;
   for (const [k, d] of Object.entries(bgLayers)) d.classList.toggle('on', k === key);
 }
-updateScene();
-setInterval(updateScene, 30 * 1000);
+// 미리보기용: ?demo 를 붙이면 낮 → 노을 → 밤 을 몇 초마다 돌아가며 보여줌
+const DEMO = new URLSearchParams(location.search).has('demo');
+if (DEMO) {
+  const LABELS = { day: '☀️ 낮 (08~17시)', sunset: '🌇 노을 (06~08시 · 17~19시)', night: '🌙 밤 (19~06시)' };
+  const label = document.createElement('div');
+  label.style.cssText = 'position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:300;' +
+    'background:rgba(0,0,0,.55);color:#fff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:999px;pointer-events:none';
+  stage.appendChild(label);
+  const order = ['day', 'sunset', 'night'];
+  let i = 0;
+  const show = () => {
+    const key = order[i++ % order.length];
+    currentScene = key;
+    document.body.style.background = SCENES[key].sky;
+    for (const [k, d] of Object.entries(bgLayers)) d.classList.toggle('on', k === key);
+    label.textContent = LABELS[key];
+  };
+  show();
+  setInterval(show, 6000);
+} else {
+  updateScene();
+  setInterval(updateScene, 30 * 1000);
+}
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = arr => arr[(Math.random() * arr.length) | 0];
