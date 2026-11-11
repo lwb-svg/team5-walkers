@@ -26,8 +26,9 @@
   }
   .walker {
     position: absolute; left: 0; bottom: 0;
-    will-change: transform; cursor: pointer;
+    will-change: transform; cursor: grab; touch-action: none;
   }
+  .walker.dragging { cursor: grabbing; }
   .shadow {
     position: absolute; left: 50%; bottom: 16px;
     width: 56%; height: 8px; margin-left: -28%;
@@ -84,7 +85,13 @@ const BG = {
   w: 2000, h: 579,
   // 이미지 아래쪽에서부터 잔디(발 디딜 곳)까지의 비율: 뒤쪽 ~ 앞쪽
   groundBack: 0.245, groundFront: 0.22,
+  // 공중 발판 (배경 이미지 픽셀 기준): 왼쪽 끝 x0, 오른쪽 끝 x1, 발 딛는 높이 y
+  platforms: [
+    { x0: 1040, x1: 1765, y: 224 },   // 위쪽 긴 발판
+    { x0: 1658, x1: 1840, y: 301 },   // 오른쪽 작은 발판
+  ],
 };
+const FALL_SPEED = 140;   // 떨어지는 속도 (px/초) — 천천히
 
 // [파일, 이름, 원본 너비, 그림이 보는 방향(-1 왼쪽 / 1 오른쪽)]
 const MEMBERS = [
@@ -118,13 +125,35 @@ stage.style.backgroundImage = `url("${BG.url}")`;
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = arr => arr[(Math.random() * arr.length) | 0];
 
-let W = 0, H = 0, charH = 100, groundBack = 60, groundFront = 55;
+let W = 0, H = 0, K = 1, bgH = 0, charH = 100, groundBack = 60, groundFront = 55;
 function measure() {
   W = stage.clientWidth; H = stage.clientHeight;
-  const bgH = BG.h * (W / BG.w);             // background-size: 100% auto, 아래 기준 정렬
+  K = W / BG.w;                              // 배경 이미지 1px → 화면 px
+  bgH = BG.h * K;                            // background-size: 100% auto, 아래 기준 정렬
   groundBack = bgH * BG.groundBack;
   groundFront = bgH * BG.groundFront;
   charH = Math.max(30, Math.min(70, bgH * 0.18));   // 배경 크기에 비례 (메이플 비율)
+}
+
+// 서 있을 수 있는 땅: 0 = 바닥, 1.. = 공중 발판
+function surfaceFeet(w, i) {                 // 화면 아래에서 발까지의 높이(px)
+  if (i === 0) return groundBack + (groundFront - groundBack) * w.depth;
+  return (BG.h - BG.platforms[i - 1].y) * K;
+}
+function surfaceRange(w, i) {                // 캐릭터 왼쪽 x가 움직일 수 있는 범위
+  if (i === 0) return [0, W - w.w];
+  const p = BG.platforms[i - 1];
+  return [p.x0 * K - w.w / 2, p.x1 * K - w.w / 2];
+}
+// 현재 위치 아래에서 가장 가까운 땅 찾기
+function landingSurface(w) {
+  const cx = w.x + w.w / 2;
+  let best = 0, bestFeet = surfaceFeet(w, 0);
+  BG.platforms.forEach((p, k) => {
+    const f = surfaceFeet(w, k + 1);
+    if (cx >= p.x0 * K && cx <= p.x1 * K && f <= w.fb + 1 && f > bestFeet) { best = k + 1; bestFeet = f; }
+  });
+  return best;
 }
 
 let recentLines = [];
@@ -151,19 +180,60 @@ const walkers = MEMBERS.map(([file, name, nw, native]) => {
     hopT: Math.random(), hopDur: rand(.5, .6), hopH: rand(3, 5),
     hopAmp: 0,                           // 걷는 중 1, 멈추면 0으로 부드럽게
     jump: 0, pause: rand(0, 2), talking: 0,
+    surf: 0,                             // 서 있는 땅
+    state: 'walk',                       // walk | drag | fall
+    fb: 0,                               // 드래그·낙하 중 발 높이 (화면 아래 기준)
   };
-  el.addEventListener('click', () => { if (w.jump <= 0) w.jump = .55; say(w); });
+  attachDrag(w);
   return w;
 });
 
+/* 드래그 & 드롭 (클릭만 하면 점프 + 한마디) */
+function attachDrag(w) {
+  let startX = 0, startY = 0, offX = 0, offY = 0, moved = false, down = false;
+  const toLocal = e => { const r = stage.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  w.el.addEventListener('pointerdown', e => {
+    if (!w.placed) return;
+    e.preventDefault();
+    w.el.setPointerCapture(e.pointerId);
+    const [px, py] = toLocal(e);
+    startX = px; startY = py; moved = false; down = true;
+    const feetFromBottom = w.state === 'walk' ? surfaceFeet(w, w.surf) : w.fb;
+    offX = px - w.x; offY = (H - py) - feetFromBottom;
+  });
+  w.el.addEventListener('pointermove', e => {
+    if (!down) return;
+    const [px, py] = toLocal(e);
+    if (!moved && Math.hypot(px - startX, py - startY) < 5) return;
+    if (!moved) { moved = true; w.state = 'drag'; w.el.classList.add('dragging'); }
+    w.x = Math.max(0, Math.min(W - w.w, px - offX));
+    w.fb = Math.max(0, Math.min(H - w.h * .3, (H - py) - offY));
+  });
+  const up = () => {
+    if (!down) return;
+    down = false;
+    w.el.classList.remove('dragging');
+    if (moved) { w.state = 'fall'; w.pause = rand(.8, 1.5); }
+    else { if (w.jump <= 0) w.jump = .55; say(w); }
+  };
+  w.el.addEventListener('pointerup', up);
+  w.el.addEventListener('pointercancel', up);
+}
+
+let prevW = 0;
 function layout() {
   measure();
+  if (W <= 0) return;
+  const ratioW = prevW > 0 ? W / prevW : 1;   // 너비가 바뀌면 위치도 같은 비율로
+  prevW = W;
   walkers.forEach((w, i) => {
+    w.x *= ratioW;
+    if (w.state !== 'walk') w.fb *= ratioW;
     const h = charH * (0.92 + w.depth * 0.08);
     w.h = h; w.w = h * w.ratio;
     w.el.style.width = w.w + 'px';
     w.el.style.height = (h + 20) + 'px';
-    if (!w.placed && W > 0) { w.x = (W / walkers.length) * (i + rand(.1, .9)) - w.w / 2; w.placed = true; }
+    if (!w.placed) { w.x = (W / walkers.length) * (i + rand(.1, .9)) - w.w / 2; w.placed = true; }
   });
 }
 layout();
@@ -200,35 +270,51 @@ function tick(now) {
   }
 
   for (const w of walkers) {
-    const walking = w.pause <= 0;
-    if (!walking) w.pause -= dt;
-    else {
-      w.x += w.dir * w.speed * dt;
-      if (Math.random() < dt * 0.15) w.dir *= -1;                 // 가끔 뒤돌기
-      if (Math.random() < dt * 0.18) w.pause = rand(1, 3);        // 가끔 멈춰 서기
-    }
     if (!w.placed) continue;
-    if (w.x < 0) { w.x = 0; w.dir = 1; }
-    if (w.x > W - w.w) { w.x = W - w.w; w.dir = -1; }
+    let feet, y = 0, tilt = 0;
 
-    // 걸을 때만 가볍게 통통
-    w.hopAmp += ((walking ? 1 : 0) - w.hopAmp) * Math.min(1, dt * 6);
-    w.hopT += dt / w.hopDur;
-    let y = Math.abs(Math.sin(w.hopT * Math.PI)) * w.hopH * w.hopAmp;
-    if (w.jump > 0) {
-      const q = 1 - w.jump / .55;
-      y = Math.max(y, Math.sin(q * Math.PI) * w.h * .25);
-      w.jump -= dt;
+    if (w.state === 'drag') {
+      feet = w.fb;
+      tilt = Math.sin(now / 120) * 6;                             // 잡혀서 버둥버둥
+    } else if (w.state === 'fall') {
+      const target = landingSurface(w);
+      const tf = surfaceFeet(w, target);
+      w.fb -= FALL_SPEED * dt;
+      tilt = Math.sin(now / 200) * 3;
+      if (w.fb <= tf) { w.fb = tf; w.surf = target; w.state = 'walk'; }
+      feet = w.fb;
+    } else {
+      const walking = w.pause <= 0;
+      if (!walking) w.pause -= dt;
+      else {
+        w.x += w.dir * w.speed * dt;
+        if (Math.random() < dt * 0.15) w.dir *= -1;               // 가끔 뒤돌기
+        if (Math.random() < dt * 0.18) w.pause = rand(1, 3);      // 가끔 멈춰 서기
+      }
+      const [lo, hi] = surfaceRange(w, w.surf);
+      if (w.x < lo) { w.x = lo; w.dir = 1; }
+      if (w.x > hi) { w.x = hi; w.dir = -1; }
+
+      // 걸을 때만 가볍게 통통
+      w.hopAmp += ((walking ? 1 : 0) - w.hopAmp) * Math.min(1, dt * 6);
+      w.hopT += dt / w.hopDur;
+      y = Math.abs(Math.sin(w.hopT * Math.PI)) * w.hopH * w.hopAmp;
+      if (w.jump > 0) {
+        const q = 1 - w.jump / .55;
+        y = Math.max(y, Math.sin(q * Math.PI) * w.h * .25);
+        w.jump -= dt;
+      }
+      feet = surfaceFeet(w, w.surf);
     }
 
     const face = w.dir * w.native;   // 그림 방향과 이동 방향이 다르면 반전
-    w.body.style.transform = `translateY(${-y}px) scaleX(${face})`;
+    w.body.style.transform = `translateY(${-y}px) rotate(${tilt}deg) scaleX(${face})`;
     const s = 1 - Math.min(.4, y / (w.h * .5));
-    w.shadow.style.transform = `scale(${s})`; w.shadow.style.opacity = s;
+    w.shadow.style.transform = `scale(${s})`;
+    w.shadow.style.opacity = w.state === 'walk' ? s : 0;
 
-    const feet = groundBack + (groundFront - groundBack) * w.depth;
     w.el.style.transform = `translate(${w.x}px, ${-(feet - 20)}px)`;
-    w.el.style.zIndex = w.talking > 0 ? 100 : Math.round(w.depth * 50);
+    w.el.style.zIndex = w.state !== 'walk' ? 200 : w.talking > 0 ? 100 : (w.surf ? 5 : 10 + Math.round(w.depth * 50));
 
     if (w.talking > 0) {
       w.talking -= dt;
